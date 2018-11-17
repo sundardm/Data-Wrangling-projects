@@ -1,0 +1,255 @@
+---
+
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(nycflights13)
+```
+
+## 1
+
+### Table 2
+
+```{r}
+#1 Extract the number of TB cases per country per year
+table2_sol1_cases <- filter(table2, type == "cases")$count
+
+print(table2_sol1_cases)  
+
+#2 Extract the matching population per country per year
+
+table2_sol1_pop <- filter(table2,type == "population")$count
+
+print(table2_sol1_pop)
+
+#2.1 Extract table with repeat excluded, and deleted column
+
+table2_sol1 <- filter(table2, type == "cases")
+table2_sol1$population <- filter(table2,type == "population")$count
+table2_sol1 <- table2_sol1[-3]
+
+print(table2_sol1)
+
+#3 Divide cases by population, and multiply by 10,000
+table2_sol1_rate <- (table2_sol1_cases/table2_sol1_pop)*10000
+
+print(table2_sol1_rate)
+
+#4 Store back in appropriate place.
+table2_sol1$rate <- table2_sol1_rate
+
+#5 tidying columns and cleaning
+colnames(table2_sol1) <- c("Country","Year","Cases of TB", "Total population","Rate")
+
+print(table2_sol1)
+
+```
+### Table 4a + Table 4b
+
+```{r}
+
+
+#0 Wrangling to get data into shape
+
+table4_sol1_1 <- table4a %>% gather(Years,Cases,`1999`:`2000`)
+
+table4_sol1_2 <- table4b %>% gather(Years,Population,`1999`:`2000`)
+
+table4_sol1 <- merge(table4_sol1_1,table4_sol1_2) #Inner join
+
+#1 Extract the number of TB cases per country per year
+
+table4_sol1_cases <- table4_sol1$Cases
+
+print(table4_sol1_cases)
+
+#2 Extract the matching population per country per year
+
+table4_sol1_pop <- table4_sol1$Population
+
+print(table4_sol1_pop)
+
+#3 Divide cases by population, and multiply by 10,000
+
+table4_sol1_rate <- (table4_sol1_cases/table4_sol1_pop)*10000
+print(table4_sol1_rate)
+
+#4 Store back in appropriate place.
+
+table4_sol1$Rate <- table4_sol1_rate
+
+print(table4_sol1)
+
+```
+
+## 2
+
+This doesn't work because the gather function expects columns names to be inputed. 
+Since we only input the column names as integers, the gather function meets an error.
+We have to put the quotations around 1999 and 2000 to make the code work. 
+
+```{r}
+
+#Fixed code
+table4a%>%gather('1999','2000',key="year",value="cases")
+```
+
+## 3
+
+### A
+
+The distribution remains constant for most of the days. With a high density of flights departing in the morning (7:30-9 am) or the evening (3-7 pm). We observe a few outliers, but that can be explained by certain outlier over the course of the year. (Christmas, New Years, Thanksgiving, Summer vacation). 
+
+```{r}
+q3a <- flights %>%  transmute(date = make_date(year,month,day), hour = dep_time%/% 100) %>% 
+  group_by(date,hour) %>% ggplot(aes(x = hour, group = date)) + geom_density() + xlim(0,26) + 
+  ggtitle("Distribution of flight depatures relative to  the course of a day")
+
+q3a
+
+```
+
+### B
+
+After creating our own column verfying depature delay, and then finding the matches where our depature delay does not match the given departure delays in the "flights" dataset, we observe disrepancies. 
+
+We see departure times earlier than the scheduled departure times. This is obviously not possible. The only possible explanation is that the flight departs the following day at the times given. Our dataset however, records the true time but sets the departure date to the intiial scheduled date, resulting in an incorrect date. The correct time difference is recorded in dep_delay, but the date on the departure time is wrong. This results in an inconsistent data. 
+
+The rest of the data is consistent with our findings. 
+
+```{r}
+flights_1 <- flights %>% transmute(dep_time = make_datetime(year,month,day, 
+            dep_time%/%100, dep_time%%100), sched_dep_time = 
+        make_datetime(year,month,day, sched_dep_time%/%100, 
+                      sched_dep_time%%100),dep_delay)
+
+q3b <- flights_1  %>% mutate(delay_check =as.numeric(flights_1$dep_time-
+      flights_1$sched_dep_time,units="mins"))   %>% filter(dep_delay != delay_check)
+
+head(q3b)
+```
+
+### C
+
+To start off, we convert every occurence of a 0 index to a 60. Since we are asked to include the 50-60 minute interval, and 60 is essentially 0, and both of them relate to the end/start of an hour. We convert it to 60, to make it count within our 50-60 interval.
+
+I created a variable (through transmute) and create a boolean variable that says whether a flight left early or not.Please refer to the sample printed.
+
+First I printed out the plot of flights leaving early with respect to each minute (Graph 1). There we observe a high proportion of flights leaving at 30 minutes or 60/0 minutes. Since the question is asking me to confirm, Dr. Ramesh's hypothesis for the interval, I will group them into their respective intervals (graph 2).
+
+
+I can confirm your hypothesis that the interval between 50-60 is highly related to flights leaving earlier than their scheduled departure time. Approximately 59.5% of our flights between the interval 50-60 minutes.
+
+I however, do not see a relationship between the interval 20-30 minutes and flights leaving early. This however, is a relative comparison, as we still have 54.25% of our flights between that interval leaving early. This is still a pretty high number, that may indeed confirm your hypothesis, depending on your definition of your hypothesis. 
+
+```{r}
+flights$minute[flights$minute == 0] = 60 #making life easier
+#Sample for boolean vector
+head(flights %>%
+  transmute(early = dep_delay < 0,dep_delay))
+#Full command to graph
+q3c <- flights %>%
+  transmute(early = dep_delay < 0,
+         minute = minute) %>%
+  group_by(minute) %>%
+  summarise(early = mean(early, na.rm = TRUE)) %>%
+  ggplot(aes(x = minute, y = early)) +
+  geom_point() + scale_y_continuous(breaks=seq(0,1,.01)) + 
+  ggtitle("Density of early departures vs time - Graph 1")
+
+q3c
+
+q3c_2 <- flights %>%
+  transmute(early = dep_delay < 0,
+         minute = cut(minute, c(1,10,20,30,40,50,60), 
+                                            include.lowest = T)) %>%
+  group_by(minute) %>%
+  summarise(early = mean(early, na.rm = TRUE)) %>%
+  ggplot(aes(x = minute, y = early)) +
+  geom_point() + scale_y_continuous(breaks=seq(0,1,.01)) + 
+  ggtitle("Density of early departures vs time intervals of the hour - Graph 2")
+
+q3c_2
+
+```
+
+## 4
+
+Please follow along my code on the bottom. This code is adapted from Dr. Ramesh's web scraping R code.
+
+Please excuse the overflow of the output in RMarkdown. RMarkdown can not longer limit the output of code overflow.I have tried to fix this error using tidyr, but to no avail. This will be possible to avoid in another LaTex editor. 
+```{r}
+
+
+library(rvest)
+
+#Setting up environment 
+qbs_scraping <-  read_html("https://geiselmed.dartmouth.edu/qbs/")
+
+
+#What is the website about?
+h1_text <- qbs_scraping %>% html_nodes("h1") %>%html_text()
+head(h1_text)
+
+#Featured news
+#Title
+h2_text <- qbs_scraping %>% html_nodes("h2") %>%html_text()
+head(h2_text)
+#Featured columns
+h3_text <- qbs_scraping %>% html_nodes("h3") %>%html_text()
+head(h3_text)
+#All the paragraphs on the website
+p_nodes <- qbs_scraping %>%html_nodes("p")%>%html_text()
+head(p_nodes)
+#After visual verification, contact information can be extracted
+info_nodes <- p_nodes[20:34]
+head(info_nodes)
+#All the clickable/interactive tabs
+li_text <- qbs_scraping %>% html_nodes("li") %>%html_text()
+head(li_text)
+#Sample example on how we can use li_text
+#Use grep function to search text for exact match
+#Finding exact match for "MS Students"
+sub_urls1 <-li_text[grep("MS Students$", li_text)]
+print(sub_urls1)
+#Inserting hyphen between MS and Students
+sub_urls1 <- gsub('([[:punct:]])|\\s+','-',sub_urls1)
+
+#Creating a new url to scrape MS student data
+qbs_scraping2 <-  read_html(paste0('https://geiselmed.dartmouth.edu/qbs/','people/students/',sub_urls1[1]))
+#Extract all Student name and education
+lii_text <- qbs_scraping2 %>% html_nodes("td") %>%html_text()
+head(lii_text)
+#Extract all student summary
+table_text<-qbs_scraping2 %>% html_nodes("p") %>%html_text()
+head(table_text)
+
+#unordered list items on webpage. Can be useful for batch extract.
+ul_text <- qbs_scraping %>% html_nodes("ul") %>%html_text()
+head(ul_text)
+
+#Sample operation on ul 
+ul_text[1]
+substr(ul_text[2],start=5,stop=14)
+
+#Mainly with names, some others are also incuded in this html class
+strong_text <- qbs_scraping %>% html_nodes("strong") %>%html_text()
+head(strong_text
+     )
+# all text irrespecive of headings, paragrpahs, lists, ordered list etc..
+all_text <- qbs_scraping %>%
+  html_nodes("div") %>% 
+  html_text()
+
+head(all_text)
+
+#Sample on how to write XML output to csv
+
+csv_ready <- as.character(li_text, "converted.csv")
+
+
+
+```
+
