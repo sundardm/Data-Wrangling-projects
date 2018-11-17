@@ -1,6 +1,6 @@
 # Data Wrangling Projects
 
-This is repository of the projects done in the course Data Wrangling. Permission has been acquired to make these works public. 
+This is a repository of the projects done in the course Data Wrangling. Permission has been acquired to make these works public. 
 
 
 
