@@ -1,6 +1,6 @@
 # Data Wrangling Projects
 
-This is a repository of the projects done in the course Data Wrangling. Permission has been acquired to make these works public. 
+
 
 
 
@@ -12,6 +12,7 @@ Project 1 goes over the basics of data wrangling in SQL with a clinical data tab
 Project 2 expands upon project 1, by incorporating a phone call/message database and more complex wrangling operations are performed (renaming categorical variables). The number of instances for each key value (in our case, this was the ID), were obtained across a range of variables (Call number etc.). The initial table was merged with another table to expand our records, and similar renaming was done (call types). The texts were grouped per week and by type of sender to allow for better interpretation. Similarly, the texts were sorted by chronic condition. 
 
 Project 3 takes our experience in Data wrangling from SQL to R. A lot of the tedious operations in SQL are merely a line or two in R. I perform basic arithmetic operations with an inbuilt dataset within R, and try to extract the incidence rate for a disease across countries. The original table is presented in such a form, that columns had to be modified, and several dplyr and tidyr functions had to be employed. 
+
 I then move to another in-built dataset (nycflights13), and try to visualize the daily departure times of flights for a single year. I verify the integrity of the dataset by performing cross validation and then try to explain the discrepancies. Along a similar line, I was asked to confirm a hypothesis, that flights across specific ranges in a hour are more likely to leave early. To close up, a basic web scraping across basic html nodes are performed.
 
 The midterm project is open ended. I was given a diabetes dataset taken containing their cross sectional survey answers across thousands of patients. Not all of them were diabetic, and their answers differed accordingly. I identified a pattern to help clean the data, and rows that contributed nothing for our purpose were deleted. The knowledge acquired with the previous projects, were put into action. Columns and factors were renamed. Data issues of this dataset were identified, and the appropriate actions were performed and reasoned out. The primary goal of this project was to show that the required operations could be performed in both R and SQL. 
